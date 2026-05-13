@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>清风天气 | 现代简约天气预报</title>
+    <!-- Tailwind CSS v2 + 基础样式 (稳定实用，适配快速开发) -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Font Awesome 6 (免费图标库，增强天气图标视觉) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- 自定义补充样式：滚动吸顶动画、平滑滚动、按钮微交互等 -->
+    <style>
+        /* ---------- 全局平滑滚动与滚动边距修正 (避免固定导航栏遮挡锚点) ---------- */
+        html {
+            scroll-behavior: smooth;
+        }
+        /* 为所有锚点目标预留顶部内边距 (适配固定导航栏高度 4rem = 64px) */
+        section, [id^="section-"], .anchor-target {
+            scroll-margin-top: 80px;
+        }
+        /* 自定义吸顶导航栏过渡效果 */
+        .navbar-scrolled {
+            background-color: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.08);
+            border-bottom: 1px solid rgba(72, 187, 120, 0.15);
+        }
+        /* 默认导航栏透明，悬浮时微亮 */
+        .navbar-transparent {
+            background-color: transparent;
+            transition: all 0.3s cubic-bezier(0.2, 0.95, 0.4, 1);
+        }
+        /* 按钮悬浮通用动画增强 */
+        .btn-hover {
+            transition: all 0.25s ease-out;
+        }
+        .btn-hover:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 20px -8px rgba(0, 160, 120, 0.35);
+        }
+        /* 卡片悬浮优雅微动 */
+        .weather-card {
+            transition: all 0.3s ease;
+        }
+        .weather-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 25px 35px -12px rgba(0, 150, 130, 0.2);
+        }
+        /* 自定义Banner背景动态渐变 (青绿→天蓝) 现代气息 */
+        .hero-gradient {
+            background: linear-gradient(125deg, #d0f0e8 0%, #b8e1fc 45%, #a0d4ff 100%);
+        }
+        /* 表单输入框聚焦样式 */
+        .input-focus-ring:focus {
+            outline: none;
+            ring: 2px solid #2c9f6e;
+            border-color: #2c9f6e;
+            box-shadow: 0 0 0 3px rgba(44, 159, 110, 0.2);
+        }
+        /* 自定义滚动条 (简洁) */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #eef5f0;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #48bb78;
+            border-radius: 20px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #2f855a;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-green-50 via-emerald-50/40 to-cyan-50 font-sans antialiased">
+
+    <!-- ======================= 顶部固定导航栏 (滚动吸顶 + 半透明/毛玻璃) ======================= -->
+    <header id="mainNavbar" class="fixed top-0 left-0 w-full z-50 py-3 md:py-4 px-6 md:px-10 lg:px-16 navbar-transparent transition-all duration-300">
+        <div class="container mx-auto flex flex-wrap items-center justify-between">
+            <!-- Logo + 品牌 -->
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-cloud-sun text-3xl text-teal-600 drop-shadow-sm"></i>
+                <span class="text-2xl font-bold tracking-tight bg-gradient-to-r from-cyan-700 to-blue-600 bg-clip-text text-transparent">清风天气</span>
+            </div>
+            <!-- 导航菜单 (桌面端flex，移动端可隐藏但响应式保留简化) -->
+            <nav class="hidden md:flex space-x-1 lg:space-x-2 text-gray-700 font-medium">
+                <a href="#home" class="nav-link px-3 py-2 rounded-full text-gray-800 hover:text-teal-600 transition-colors duration-200">首页</a>
+                <a href="#weather-modules" class="nav-link px-3 py-2 rounded-full text-gray-800 hover:text-teal-600 transition-colors duration-200">天气服务</a>
+                <a href="#contact" class="nav-link px-3 py-2 rounded-full text-gray-800 hover:text-teal-600 transition-colors duration-200">联系我们</a>
+            </nav>
+            <!-- 小巧CTA按钮 (装饰) -->
+            <div class="hidden md:block">
+                <button class="bg-white/30 backdrop-blur-sm border border-white/50 text-teal-800 px-5 py-2 rounded-full text-sm font-semibold shadow-sm hover:bg-teal-50 hover:border-teal-300 transition-all duration-200 btn-hover">
+                    <i class="fas fa-location-dot mr-1"></i> 定位城市
+                </button>
+            </div>
+            <!-- 移动端菜单图标 (简单响应式只做示意) -->
+            <div class="md:hidden text-2xl text-teal-700">
+                <i class="fas fa-bars"></i>
+            </div>
+        </div>
+    </header>
+
+    <!-- ======================= 全屏Banner (现代大气，青色+绿色融合) ======================= -->
+    <section id="home" class="relative min-h-screen flex items-center justify-center overflow-hidden hero-gradient">
+        <!-- 装饰抽象云纹 -->
+        <div class="absolute top-0 left-0 w-full h-full opacity-20 pointer-events-none">
+            <div class="absolute top-20 left-10 w-72 h-72 bg-white rounded-full blur-3xl"></div>
+            <div class="absolute bottom-10 right-5 w-96 h-96 bg-cyan-300 rounded-full blur-3xl"></div>
+        </div>
+        <div class="container mx-auto px-6 md:px-12 text-center relative z-10 pt-20">
+            <div class="max-w-4xl mx-auto">
+                <!-- 动态天气标志 -->
+                <div class="inline-flex items-center gap-2 bg-white/40 backdrop-blur-sm rounded-full px-5 py-2 mb-6 shadow-sm">
+                    <i class="fas fa-sun text-yellow-500 text-xl"></i>
+                    <span class="text-cyan-800 font-medium">实时更新 · 精准预报</span>
+                </div>
+                <h1 class="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-gray-800 leading-tight">
+                    遇见<span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 to-teal-500"> 舒适天气 </span>灵感
+                </h1>
+                <p class="text-lg md:text-xl text-gray-700 mt-6 max-w-2xl mx-auto leading-relaxed">
+                    智能气象 · 全球定位 · 实时空气质量与未来七日趋势<br>
+                    为您呈现清新准确的天气数据。
+                </p>
+                <div class="mt-10 flex flex-wrap justify-center gap-4">
+                    <a href="#weather-modules" class="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold px-8 py-4 rounded-full shadow-lg transition-all duration-300 btn-hover text-lg">
+                        探索天气模块 <i class="fas fa-arrow-right"></i>
+                    </a>
+                    <a href="#contact" class="inline-flex items-center gap-2 bg-white/70 backdrop-blur-sm text-teal-700 border border-teal-200 font-semibold px-8 py-4 rounded-full shadow-md hover:bg-white transition-all duration-300 btn-hover text-lg">
+                        获取建议 <i class="fas fa-leaf"></i>
+                    </a>
+                </div>
+                <!-- 当前城市速览卡片小提示 -->
+                <div class="mt-16 flex justify-center gap-6 text-sm text-gray-600 bg-white/30 backdrop-blur-sm w-fit mx-auto rounded-2xl px-6 py-3">
+                    <div class="flex items-center gap-2"><i class="fas fa-map-marker-alt text-teal-600"></i> 杭州 · 实时</div>
+                    <div class="flex items-center gap-2"><i class="fas fa-temperature-high text-orange-500"></i> 24°C</div>
+                    <div class="flex items-center gap-2"><i class="fas fa-cloud-sun text-cyan-500"></i> 晴间多云</div>
+                </div>
+            </div>
+        </div>
+        <!-- 装饰波浪分割 (视觉过渡) -->
+        <div class="absolute bottom-0 left-0 w-full overflow-hidden leading-none">
+            <svg class="relative block w-full h-12 md:h-16" viewBox="0 0 1200 120" preserveAspectRatio="none">
+                <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" opacity=".25" fill="#f0fdf4"></path>
+                <path d="M0,0V15.81C13,21.25,27.93,25.67,44.24,28.45c69.76,11,140.5,5.7,209.6-6.35C311.7,12.34,379.7,32.49,447.9,44.06c66.37,11.28,133.16,3.81,199.7-8.84,65.73-12.51,129-30.26,194.4-34.5C919.5,0,1010.3,12.2,1080,35.14c30.8,10.74,59.4,25.75,86.2,40.38L1200,0Z" fill="#f0fdf4" opacity=".5"></path>
+                <path d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c119-21.21,235.42-45.52,354.82-28.9C944.33,25.31,1024.57,55.82,1120,78.11c54.32,12.34,106.14,14.28,160,4.48L1200,0Z" fill="#f0fdf4"></path>
+            </svg>
+        </div>
+    </section>
+
+    <!-- ======================= 三个内容模块 (现代天气预报卡片) ======================= -->
+    <section id="weather-modules" class="py-20 md:py-28 px-6 bg-white/50 backdrop-blur-sm relative">
+        <div class="container mx-auto">
+            <!-- 标题装饰 -->
+            <div class="text-center mb-14">
+                <span class="text-teal-600 font-semibold tracking-wide bg-teal-50 px-4 py-1 rounded-full text-sm"><i class="fas fa-chart-line mr-1"></i> 智慧气象站</span>
+                <h2 class="text-3xl md:text-5xl font-bold text-gray-800 mt-4">多维天气 · 精确护航</h2>
+                <div class="w-24 h-1 bg-gradient-to-r from-cyan-400 to-teal-400 mx-auto mt-4 rounded-full"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10">
+                <!-- 模块 1：今日实况天气 -->
+                <div class="weather-card bg-white rounded-3xl shadow-xl overflow-hidden transition-all duration-300 border border-teal-100">
+                    <div class="bg-gradient-to-r from-cyan-500 to-teal-400 px-6 py-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-xl font-bold text-white"><i class="fas fa-sun mr-2"></i>今日实况</h3>
+                            <i class="fas fa-calendar-alt text-white/80 text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-gray-500">杭州 · 西湖区</span>
+                            <span class="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full">空气质量: 优</span>
+                        </div>
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-5xl font-black text-gray-800">24</span>
+                            <span class="text-2xl text-gray-500">°C</span>
+                            <span class="ml-3 text-gray-600">体感 23°</span>
+                        </div>
+                        <div class="flex gap-3 mt-4 text-gray-600 border-t border-gray-100 pt-4">
+                            <div><i class="fas fa-tint text-cyan-400 mr-1"></i> 湿度 68%</div>
+                            <div><i class="fas fa-wind text-teal-400 mr-1"></i> 风速 2.1m/s</div>
+                        </div>
+                        <div class="mt-4 bg-gray-50 rounded-2xl p-3 text-center text-gray-700">
+                            <i class="fas fa-cloud-sun text-yellow-500 mr-2"></i> 白天晴朗，夜间微风，宜户外活动
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 模块 2：未来三天趋势预报 -->
+                <div class="weather-card bg-white rounded-3xl shadow-xl overflow-hidden transition-all duration-300 border border-teal-100">
+                    <div class="bg-gradient-to-r from-sky-500 to-cyan-400 px-6 py-4">
+                        <h3 class="text-xl font-bold text-white"><i class="fas fa-cloud-sun-rain mr-2"></i>三日展望</h3>
+                    </div>
+                    <div class="p-5 divide-y divide-gray-100">
+                        <!-- 明天 -->
+                        <div class="flex justify-between items-center py-3 first:pt-0">
+                            <div class="flex items-center gap-3 w-28"><i class="fas fa-calendar-day text-cyan-500 w-6"></i><span class="font-medium">明天</span></div>
+                            <div class="flex gap-4 items-center">
+                                <i class="fas fa-cloud-sun text-yellow-500 text-xl"></i>
+                                <span class="font-semibold">22° / 16°</span>
+                            </div>
+                            <span class="text-sm text-gray-500">多云转晴</span>
+                        </div>
+                        <!-- 后天 -->
+                        <div class="flex justify-between items-center py-3">
+                            <div class="flex items-center gap-3 w-28"><i class="fas fa-calendar-week text-cyan-500 w-6"></i><span class="font-medium">周四</span></div>
+                            <div class="flex gap-4 items-center">
+                                <i class="fas fa-cloud-rain text-blue-400 text-xl"></i>
+                                <span class="font-semibold">19° / 14°</span>
+                            </div>
+                            <span class="text-sm text-gray-500">小雨转阴</span>
+                        </div>
+                        <!-- 第三天 -->
+                        <div class="flex justify-between items-center py-3">
+                            <div class="flex items-center gap-3 w-28"><i class="fas fa-calendar-week text-cyan-500 w-6"></i><span class="font-medium">周五</span></div>
+                            <div class="flex gap-4 items-center">
+                                <i class="fas fa-sun text-orange-400 text-xl"></i>
+                                <span class="font-semibold">24° / 17°</span>
+                            </div>
+                            <span class="text-sm text-gray-500">晴朗舒适</span>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-5 py-3 text-xs text-gray-500 flex justify-between">
+                        <span><i class="fas fa-umbrella"></i> 降水概率: 20% → 45% → 10%</span>
+                        <span><i class="fas fa-leaf"></i> 出行适宜</span>
+                    </div>
+                </div>
+
+                <!-- 模块 3：空气质量 & 紫外线指数 + 环境指标 -->
+                <div class="weather-card bg-white rounded-3xl shadow-xl overflow-hidden transition-all duration-300 border border-teal-100">
+                    <div class="bg-gradient-to-r from-emerald-500 to-teal-400 px-6 py-4">
+                        <h3 class="text-xl font-bold text-white"><i class="fas fa-chart-simple mr-2"></i>健康指数</h3>
+                    </div>
+                    <div class="p-6 space-y-5">
+                        <div class="flex justify-between items-center border-b border-gray-100 pb-2">
+                            <span class="font-medium text-gray-700"><i class="fas fa-wind text-teal-500 mr-2"></i>空气质量(AQI)</span>
+                            <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">42 · 优</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-gray-100 pb-2">
+                            <span class="font-medium text-gray-700"><i class="fas fa-sun text-yellow-500 mr-2"></i>紫外线指数</span>
+                            <span class="text-gray-800 font-semibold">3级 (中等)</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-gray-100 pb-2">
+                            <span class="font-medium text-gray-700"><i class="fas fa-droplet text-blue-400 mr-2"></i>降水概率</span>
+                            <span class="text-gray-800">12%</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="font-medium text-gray-700"><i class="fas fa-mountain-sun text-emerald-500 mr-2"></i>舒适度</span>
+                            <span class="text-gray-800">🌿 极佳 · 适宜出行</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- 额外天气提示栏，增加活力 -->
+            <div class="mt-12 text-center text-gray-600 bg-teal-50/60 rounded-2xl py-4 px-6 max-w-3xl mx-auto backdrop-blur-sm">
+                <i class="fas fa-cloud-moon text-teal-500 mr-2"></i> 下一轮冷空气预计5天后抵达，请留意温度变化 · 夜间最低13°C
+            </div>
+        </div>
+    </section>
+
+    <!-- ======================= 联系表单模块 (清新绿意背景 + 白色卡片风格) ======================= -->
+    <section id="contact" class="py-20 md:py-28 bg-gradient-to-br from-green-100/70 via-teal-50/40 to-cyan-50 relative">
+        <div class="container mx-auto px-6">
+            <div class="max-w-5xl mx-auto bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl overflow-hidden border border-teal-200/60">
+                <div class="grid md:grid-cols-2 gap-0">
+                    <!-- 左侧信息区 -->
+                    <div class="bg-gradient-to-br from-teal-600 to-cyan-700 p-8 md:p-10 text-white">
+                        <i class="fas fa-paper-plane text-4xl mb-6 opacity-90"></i>
+                        <h3 class="text-2xl md:text-3xl font-bold mb-3">天气反馈 & 合作</h3>
+                        <p class="text-teal-50 mb-6 leading-relaxed">如果您对天气预报有建议或定制需求，欢迎留言，我们提供专业气象服务。</p>
+                        <ul class="space-y-3 text-sm">
+                            <li class="flex items-center gap-3"><i class="fas fa-envelope w-5"></i> weather@breeze.com</li>
+                            <li class="flex items-center gap-3"><i class="fas fa-phone-alt w-5"></i> 400-882-6623</li>
+                            <li class="flex items-center gap-3"><i class="fas fa-map-marker-alt w-5"></i> 中国 · 杭州智慧气象中心</li>
+                        </ul>
+                        <div class="mt-8 flex gap-3">
+                            <i class="fab fa-twitter text-xl hover:scale-110 transition"></i>
+                            <i class="fab fa-weixin text-xl hover:scale-110 transition"></i>
+                            <i class="fab fa-github text-xl hover:scale-110 transition"></i>
+                        </div>
+                    </div>
+                    <!-- 右侧表单 -->
+                    <div class="p-8 md:p-10">
+                        <h4 class="text-2xl font-bold text-gray-800 mb-2">留下您的信息</h4>
+                        <p class="text-gray-500 mb-6">我们会及时推送天气提醒与专属气象报告</p>
+                        <form action="#" method="post" onsubmit="alert('感谢联系！清风天气将尽快回复您。'); return false;">
+                            <div class="mb-5">
+                                <label class="block text-gray-700 font-medium mb-2">姓名 <span class="text-teal-500">*</span></label>
+                                <input type="text" required class="w-full px-5 py-3 border border-gray-200 rounded-2xl focus:border-teal-400 transition-all duration-200 input-focus-ring bg-gray-50" placeholder="您的称呼">
+                            </div>
+                            <div class="mb-5">
+                                <label class="block text-gray-700 font-medium mb-2">电子邮箱</label>
+                                <input type="email" class="w-full px-5 py-3 border border-gray-200 rounded-2xl focus:border-teal-400 transition-all duration-200 input-focus-ring bg-gray-50" placeholder="example@weather.com">
+                            </div>
+                            <div class="mb-6">
+                                <label class="block text-gray-700 font-medium mb-2">留言内容</label>
+                                <textarea rows="3" class="w-full px-5 py-3 border border-gray-200 rounded-2xl focus:border-teal-400 transition-all input-focus-ring bg-gray-50" placeholder="告诉我们您关注的天气区域或建议..."></textarea>
+                            </div>
+                            <button type="submit" class="w-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-bold py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 btn-hover flex items-center justify-center gap-2">
+                                发送留言 <i class="fas fa-cloud-sun-rain"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======================= 底部页脚 (现代简洁) ======================= -->
+    <footer class="bg-gray-900 text-gray-300 py-12 px-6 border-t border-teal-800/30">
+        <div class="container mx-auto">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-cloud-sun text-teal-400 text-2xl"></i>
+                    <span class="text-xl font-bold text-white">清风天气</span>
+                    <span class="text-xs bg-teal-800/50 px-2 py-0.5 rounded-full ml-2">精准有温度</span>
+                </div>
+                <div class="flex gap-8 text-sm">
+                    <a href="#" class="hover:text-teal-300 transition">隐私政策</a>
+                    <a href="#" class="hover:text-teal-300 transition">气象数据源</a>
+                    <a href="#" class="hover:text-teal-300 transition">API服务</a>
+                </div>
+                <div class="text-sm text-gray-400">
+                    &copy; 2025 清风天气 | 守护每一次出行
+                </div>
+            </div>
+            <div class="mt-8 text-center text-xs text-gray-500 border-t border-gray-800 pt-6">
+                🌤️ 实时天气数据模拟展示 · 支持全球主要城市空气质量预测
+            </div>
+        </div>
+    </footer>
+
+    <!-- 滚动吸顶JS + 平滑滚动辅助 (主动修改navbar样式) -->
+    <script>
+        (function() {
+            // 获取导航栏元素
+            const navbar = document.getElementById('mainNavbar');
+            // 滚动阈值 (吸顶背景变化)
+            function handleNavbarScroll() {
+                if (window.scrollY > 20) {
+                    navbar.classList.add('navbar-scrolled');
+                    navbar.classList.remove('navbar-transparent');
+                } else {
+                    navbar.classList.remove('navbar-scrolled');
+                    navbar.classList.add('navbar-transparent');
+                }
+            }
+            // 初始执行一次
+            window.addEventListener('scroll', handleNavbarScroll);
+            handleNavbarScroll();
+            
+            // 可选: 为所有导航链接增加优雅的滚动偏移 (由于全局scroll-margin-top已设置，无需额外处理但确保)
+            // 另外为了防止移动端导航链接点击遮挡，已经通过css scroll-margin-top设置好偏移量
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    const targetId = this.getAttribute('href');
+                    if (targetId && targetId.startsWith('#')) {
+                        const targetElem = document.querySelector(targetId);
+                        if (targetElem) {
+                            e.preventDefault();
+                            const offsetTop = targetElem.getBoundingClientRect().top + window.pageYOffset - 80;
+                            window.scrollTo({
+                                top: offsetTop,
+                                behavior: 'smooth'
+                            });
+                        }
+                    }
+                });
+            });
+            // Banner中按钮平滑处理 (确保任何按钮跳转平滑)
+            const allSmoothBtns = document.querySelectorAll('a[href^="#"]:not(.nav-link)');
+            allSmoothBtns.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    const hash = this.getAttribute('href');
+                    if (hash === "#" || hash === "") return;
+                    const target = document.querySelector(hash);
+                    if (target) {
+                        e.preventDefault();
+                        const offset = target.getBoundingClientRect().top + window.pageYOffset - 80;
+                        window.scrollTo({ top: offset, behavior: 'smooth' });
+                    }
+                });
+            });
+        })();
+    </script>
+    <!-- 额外的按钮hover动画类已全局使用 btn-hover，所有按钮具备微动效 -->
+</body>
+</html>
